@@ -140,13 +140,19 @@ export function simulateTransient(project: CircuitProject, options: TransientOpt
   const times = new Float64Array(points);
   const voltages = new Float64Array(points);
   const sys = createSystem(size);
-  let previous = new Float64Array(n);
 
-  for (let k = 0; k < points; k++) {
+  // Explicitly record the physical initial condition before taking the first
+  // backward-Euler step. With uncharged capacitors, Vc(0) = 0 V. The first
+  // solved sample therefore belongs at t = step, not t = 0.
+  times[0] = 0;
+  voltages[0] = 0;
+
+  for (let k = 1; k < points; k++) {
     clearSystem(sys);
 
-    for (const source of voltageSources) {
-      const row = n + voltageSources.indexOf(source);
+    for (let sourceIndex = 0; sourceIndex < voltageSources.length; sourceIndex++) {
+      const source = voltageSources[sourceIndex];
+      const row = n + sourceIndex;
       if (source.plus > 0) sys.A[row][source.plus - 1] += 1;
       if (source.minus > 0) sys.A[row][source.minus - 1] -= 1;
       if (source.plus > 0) sys.A[source.plus - 1][row] -= 1;
@@ -188,7 +194,6 @@ export function simulateTransient(project: CircuitProject, options: TransientOpt
         (capacitor.n > 0 ? current[capacitor.n - 1] : 0);
     }
 
-    previous = current;
     times[k] = k * step;
     voltages[k] = probeNode > 0 ? current[probeNode - 1] : 0;
   }
@@ -199,10 +204,6 @@ export function simulateTransient(project: CircuitProject, options: TransientOpt
     minVoltage = Math.min(minVoltage, v);
     maxVoltage = Math.max(maxVoltage, v);
   }
-
-  // Keep the local variable explicit: it documents that each timestep starts
-  // from the previous solved state, which is the core of the companion model.
-  void previous;
 
   return {
     ok: true,
