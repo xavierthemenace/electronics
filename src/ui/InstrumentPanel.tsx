@@ -54,6 +54,8 @@ export function InstrumentPanel() {
   const components = useCircuitStore(s => s.components);
   const dcResult = useSimulationStore(s => s.dcResult);
   const violations = useSimulationStore(s => s.dcViolations);
+  const arduinoResult = useSimulationStore(s => s.arduinoResult);
+  const runFirmware = useSimulationStore(s => s.runFirmware);
   const getCurrent = useSimulationStore(s => s.getDeviceCurrent);
   const getPower = useSimulationStore(s => s.getDevicePower);
   const runTransient = useSimulationStore(s => s.runTransient);
@@ -68,16 +70,49 @@ export function InstrumentPanel() {
   const transientRunning = useSimulationStore(s => s.transientRunning);
 
   const devices = [...components.values()].filter(c => ['resistor', 'led', 'diode', 'capacitor', 'inductor'].includes(c.type));
-  const probeCandidates = [...components.values()].flatMap(c => {
-    if (c.type !== 'capacitor') return [];
-    return [{ label: `${c.type} ${c.id.slice(0, 6)} • pin 1`, compId: c.id, pinId: '1' }];
-  });
+  const probeCandidates = [...components.values()].flatMap(c => c.type === 'capacitor' ? [{ label: `${c.type} ${c.id.slice(0, 6)} • pin 1`, compId: c.id, pinId: '1' }] : []);
 
   return (
     <div style={panel}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ fontWeight: 700 }}>Virtual Instruments</div>
-        <span style={{ color: '#6e7681', fontFamily: 'var(--font-family-mono)' }}>DC + RC transient</span>
+        <span style={{ color: '#6e7681', fontFamily: 'var(--font-family-mono)' }}>DC + RC + Arduino GPIO</span>
+      </div>
+
+      <div style={card}>
+        <div style={{ color: '#8b949e', marginBottom: 6 }}>Arduino firmware runtime</div>
+        <button
+          onClick={() => runFirmware()}
+          style={{ border: '1px solid #30363d', background: '#21262d', color: '#e6edf3', borderRadius: 5, padding: '6px 9px', cursor: 'pointer', marginBottom: 10 }}
+        >
+          Run firmware
+        </button>
+        {arduinoResult ? (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, fontFamily: 'var(--font-family-mono)' }}>
+              <div><div style={{ color: '#6e7681' }}>Steps</div><div>{arduinoResult.steps}</div></div>
+              <div><div style={{ color: '#6e7681' }}>Elapsed</div><div>{arduinoResult.state.elapsedMs} ms</div></div>
+              <div><div style={{ color: '#6e7681' }}>Serial</div><div>{arduinoResult.state.serial.length}</div></div>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <div style={{ color: '#6e7681', marginBottom: 4 }}>Driven GPIO</div>
+              <div style={{ fontFamily: 'var(--font-family-mono)', color: '#58a6ff' }}>
+                {Object.entries(arduinoResult.state.pinMode)
+                  .filter(([, mode]) => mode === 'OUTPUT')
+                  .map(([pin]) => {
+                    const p = Number(pin);
+                    return `D${p}=${arduinoResult.state.pwm[p] !== undefined ? `PWM ${arduinoResult.state.pwm[p]}` : arduinoResult.state.digital[p] ? 'HIGH' : 'LOW'}`;
+                  })
+                  .join('  ') || 'none'}
+              </div>
+            </div>
+            {arduinoResult.state.serial.length > 0 && (
+              <div style={{ marginTop: 8, color: '#8b949e' }}>{arduinoResult.state.serial.slice(-4).map((line, i) => <div key={i}>{line}</div>)}</div>
+            )}
+            {arduinoResult.errors.length > 0 && <div style={{ marginTop: 8, color: '#f85149' }}>{arduinoResult.errors.join(' ')}</div>}
+            {arduinoResult.state.warnings.length > 0 && <div style={{ marginTop: 8, color: '#d29922' }}>{arduinoResult.state.warnings.join(' ')}</div>}
+          </>
+        ) : <div style={{ color: '#6e7681' }}>Run the firmware, then simulate DC to drive connected Arduino outputs.</div>}
       </div>
 
       <div style={card}>
