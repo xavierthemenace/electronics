@@ -1,11 +1,5 @@
-/**
- * Bridges the educational Arduino runtime into the electrical circuit model.
- * The runtime remains deterministic and safe; this adapter converts GPIO/PWM
- * outputs into explicit MCU pin voltage parameters consumed by the solver.
- */
-
 import type { ArduinoRunResult } from './arduinoRuntime.js';
-import type { CircuitComponent, CircuitProject } from './model.js';
+import type { CircuitComponent, CircuitProject, Wire } from './model.js';
 
 export const ARDUINO_PINS = {
   digital: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
@@ -17,45 +11,52 @@ function pwmVoltage(duty: number, vcc = 5): number {
 }
 
 /**
- * Apply runtime outputs to Arduino component params without mutating the
- * original editor state. Inputs remain high impedance because the educational
- * runtime does not claim an input voltage that it did not measure.
+ * Build a solver-only project in which actively driven Arduino GPIO pins are
+ * represented by ordinary ideal DC sources. The editor project is never
+ * mutated and the virtual components/wires are not persisted.
  */
-export function applyArduinoRuntimeToProject(
+export function buildArduinoRuntimeProject(
   project: CircuitProject,
   runtime: ArduinoRunResult,
 ): CircuitProject {
-  const components = project.components.map((component): CircuitComponent => {
-    if (component.type !== 'arduino-uno') return { ...component, params: { ...component.params } };
+  const arduino = project.components.find(c => c.type === 'arduino-uno');
+  const ground = project.components.find(c => c.type === 'ground');
+  if (!arduino || !ground) return project;
 
-    const vcc = Number(component.params.vcc ?? 5);
-    const pinMode = runtime.state.pinMode ?? {};
-    const digital = runtime.state.digital ?? {};
-    const pwm = runtime.state.pwm ?? {};
+  const vcc = Number(arduino.params.vcc ?? 5);
+  const components: CircuitComponent[] = project.components.map(c => ({ ...c, params: { ...c.params } }));
+  const wires: Wire[] = [...project.wires.map(w => ({ a: { ...w.a }, b: { ...w.b } }))];
 
-    const nextParams: Record<string, unknown> = { ...component.params };
+  for (const pin of ARDUINO_PINS.digital) {
+    const mode = runtime.state.pinMode[pin];
+    if (mode !== 'OUTPUT') continue;
 
-    for (const pin of ARDUINO_PINS.digital) {
-      if (pinMode[pin] !== 'OUTPUT') {
-        nextParams[`d${pin}Drive`] = 'Z';
-        continue;
-      }
+    const hasPwm = Object.prototype.hasOwnProperty.call(runtime.state.pwm, pin);
+    const voltage = hasPwm
+      ? pwmVoltage(runtime.state.pwm[pin], vcc)
+      : (runtime.state.digital[pin] ? vcc : 0);
 
-      if (Object.prototype.hasOwnProperty.call(pwm, pin)) {
-        nextParams[`d${pin}Drive`] = 'PWM';
-        nextParams[`d${pin}Voltage`] = pwmVoltage(pwm[pin], vcc);
-      } else {
-        nextParams[`d${pin}Drive`] = digital[pin] === 1 ? 'HIGH' : 'LOW';
-        nextParams[`d${pin}Voltage`] = digital[pin] ? vcc : 0;
-      }
-    }
+    const virtualId = `__arduino_gpio_${arduino.id}_d${pin}`;
+    const existing = components.some(c => c.id === virtualId);
+    if (existing) continue;
 
-    return { ...component, params: nextParams };
-  });
+    components.push({
+      id: virtualId,
+      type: 'dc-source',
+      params: { voltage },
+      position: { x: arduino.position.x, y: arduino.position.y },
+      rotation: 0,
+    });
 
-  return { ...project, components };
-}
+    wires.push({
+      a: { cid: virtualId, pid: 'plus' },
+      b: { cid: arduino.id, pid: `d${pin}` },
+    });
+    wires.push({
+      a: { cid: virtualId, pid: 'minus' },
+      b: { cid: ground.id, pid: 'gnd' },
+    });
+  }
 
-export function buildArduinoRuntimeProject(project: CircuitProject, runtime: ArduinoRunResult): CircuitProject {
-  return applyArduinoRuntimeToProject(project, runtime);
+  return { ...project, components, wires };
 }
