@@ -93,6 +93,7 @@ export const useSimulationStore = create<SimulationState & SimulationActions>()(
 
     runDC: () => {
       const circuitStore = useCircuitStore.getState();
+      const source = useCodeStore.getState().sourceCode;
       let proj = circuitStore.getProject();
       if (proj.components.length === 0) {
         set((state) => { state.dcResult = null; state.dcViolations = []; state.running = false; state.arduinoResult = null; });
@@ -109,7 +110,7 @@ export const useSimulationStore = create<SimulationState & SimulationActions>()(
         proj = buildBreadboardRuntimeProject(proj, useBreadboardStore.getState().get());
         if (firmware && arduino) {
           proj = buildArduinoRuntimeProject(proj, firmware);
-          proj = buildArduinoDeviceRuntimeProject(proj, firmware);
+          proj = buildArduinoDeviceRuntimeProject(proj, firmware, source);
         }
         const result = solveDC(proj);
         const violations = runERC(proj, result);
