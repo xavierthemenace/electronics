@@ -8,10 +8,10 @@ import { InstrumentPanel } from './InstrumentPanel.js';
 import { LessonPanel } from './LessonPanel.js';
 import { CommunicationPanel } from './CommunicationPanel.js';
 import { BreadboardPanel } from './BreadboardPanel.js';
-import { IOPanel } from './IOPanel.js';
+import { PeripheralPanel } from './PeripheralPanel.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 
-type BottomTab = 'lesson' | 'code' | 'instruments' | 'communication' | 'breadboard' | 'io';
+type BottomTab = 'lesson' | 'code' | 'instruments' | 'communication' | 'breadboard' | 'peripherals';
 
 export function App() {
   const [bottomTab, setBottomTab] = useState<BottomTab>('lesson');
@@ -37,7 +37,7 @@ export function App() {
                 <button style={{ ...styles.tab, ...(bottomTab === 'instruments' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('instruments'); setBottomOpen(true); }}>◉ Instruments</button>
                 <button style={{ ...styles.tab, ...(bottomTab === 'communication' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('communication'); setBottomOpen(true); }}>⇄ Communication</button>
                 <button style={{ ...styles.tab, ...(bottomTab === 'breadboard' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('breadboard'); setBottomOpen(true); }}>▦ Breadboard</button>
-                <button style={{ ...styles.tab, ...(bottomTab === 'io' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('io'); setBottomOpen(true); }}>◌ I/O</button>
+                <button style={{ ...styles.tab, ...(bottomTab === 'peripherals' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('peripherals'); setBottomOpen(true); }}>◌ I/O</button>
                 <div style={{ flex: 1 }} />
                 <button style={styles.dockButton} onClick={() => setBottomOpen(v => !v)}>{bottomOpen ? '⌄' : '⌃'}</button>
               </div>
@@ -47,7 +47,7 @@ export function App() {
                 {bottomTab === 'instruments' && <InstrumentPanel />}
                 {bottomTab === 'communication' && <CommunicationPanel />}
                 {bottomTab === 'breadboard' && <BreadboardPanel />}
-                {bottomTab === 'io' && <IOPanel />}
+                {bottomTab === 'peripherals' && <PeripheralPanel />}
               </div>}
             </div>
           </div>
