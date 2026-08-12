@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useCircuitStore } from '../stores/circuit.js';
 import { useSimulationStore } from '../stores/simulation.js';
+import { LogicAnalyzer } from './LogicAnalyzer.js';
 
 const panel: React.CSSProperties = { height: '100%', minHeight: 0, overflow: 'auto', padding: 12, background: '#161b22', color: '#e6edf3', fontSize: 12 };
 const card: React.CSSProperties = { border: '1px solid #30363d', borderRadius: 6, background: '#0d1117', padding: 10, marginBottom: 10 };
@@ -89,10 +90,11 @@ export function InstrumentPanel() {
         </button>
         {arduinoResult ? (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, fontFamily: 'var(--font-family-mono)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, fontFamily: 'var(--font-family-mono)' }}>
               <div><div style={{ color: '#6e7681' }}>Steps</div><div>{arduinoResult.steps}</div></div>
               <div><div style={{ color: '#6e7681' }}>Elapsed</div><div>{arduinoResult.state.elapsedMs} ms</div></div>
               <div><div style={{ color: '#6e7681' }}>Serial</div><div>{arduinoResult.state.serial.length}</div></div>
+              <div><div style={{ color: '#6e7681' }}>Edges</div><div>{arduinoResult.state.transitions.length}</div></div>
             </div>
             <div style={{ marginTop: 10 }}>
               <div style={{ color: '#6e7681', marginBottom: 4 }}>Driven GPIO</div>
@@ -111,6 +113,9 @@ export function InstrumentPanel() {
             )}
             {arduinoResult.errors.length > 0 && <div style={{ marginTop: 8, color: '#f85149' }}>{arduinoResult.errors.join(' ')}</div>}
             {arduinoResult.state.warnings.length > 0 && <div style={{ marginTop: 8, color: '#d29922' }}>{arduinoResult.state.warnings.join(' ')}</div>}
+            <div style={{ marginTop: 10 }}>
+              <LogicAnalyzer transitions={arduinoResult.state.transitions} />
+            </div>
           </>
         ) : <div style={{ color: '#6e7681' }}>Run the firmware, then simulate DC to drive connected Arduino outputs.</div>}
       </div>
