@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { listComponents, isModelled } from '../core/registry.js';
+import { listComponents } from '../core/registry.js';
 
 const CATEGORIES = [
   { id: 'infrastructure', name: 'Infrastructure', icon: '⏚' }, { id: 'power', name: 'Power', icon: '⚡' },
@@ -16,8 +16,9 @@ function CategorySection({ category, components, onDragStart }: { category: type
 }
 
 function ComponentItem({ comp, onDragStart }: { comp: ReturnType<typeof listComponents>[0]; onDragStart: (e: React.DragEvent, compType: string) => void; }) {
-  const modelled = isModelled(comp.type);
-  return <div draggable={modelled} onDragStart={e => modelled && onDragStart(e, comp.type)} style={{ ...styles.componentItem, opacity: modelled ? 1 : .5, cursor: modelled ? 'grab' : 'not-allowed' }} title={modelled ? comp.docs.description : `${comp.name} (planned)`}><span style={styles.componentIcon}>{getComponentIcon(comp.type)}</span><span style={styles.componentName}>{comp.name}</span>{!modelled && <span style={styles.plannedBadge}>Planned</span>}</div>;
+  return <div draggable onDragStart={e => onDragStart(e, comp.type)} style={styles.componentItem} title={comp.docs.description}>
+    <span style={styles.componentIcon}>{getComponentIcon(comp.type)}</span><span style={styles.componentName}>{comp.name}</span><span style={styles.readyBadge}>Ready</span>
+  </div>;
 }
 
 function getComponentIcon(type: string): string {
@@ -32,5 +33,5 @@ export function ComponentPalette() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  palette: { width: 280, height: '100%', background: '#161b22', borderRight: '1px solid #30363d', display: 'flex', flexDirection: 'column', overflow: 'hidden' }, paletteHeader: { padding: '12px 16px', borderBottom: '1px solid #30363d' }, paletteTitle: { margin: 0, fontSize: 14, fontWeight: 600, color: '#e6edf3' }, paletteHint: { fontSize: 11, color: '#8b949e', marginTop: 4 }, paletteContent: { flex: 1, overflowY: 'auto', padding: 8 }, categorySection: { marginBottom: 16 }, categoryHeader: { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 8, background: '#21262d', borderRadius: 6 }, categoryIcon: { fontSize: 16 }, categoryTitle: { fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', color: '#8b949e' }, componentList: { display: 'flex', flexDirection: 'column', gap: 4 }, componentItem: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#21262d', borderRadius: 6, cursor: 'grab', transition: 'background .15s', userSelect: 'none' }, componentIcon: { fontSize: 18, width: 24, textAlign: 'center' }, componentName: { flex: 1, fontSize: 13, color: '#e6edf3' }, plannedBadge: { fontSize: 10, padding: '2px 6px', background: '#3d3d3d', color: '#8b949e', borderRadius: 3, textTransform: 'uppercase' },
+  palette: { width: 280, height: '100%', background: '#161b22', borderRight: '1px solid #30363d', display: 'flex', flexDirection: 'column', overflow: 'hidden' }, paletteHeader: { padding: '12px 16px', borderBottom: '1px solid #30363d' }, paletteTitle: { margin: 0, fontSize: 14, fontWeight: 600, color: '#e6edf3' }, paletteHint: { fontSize: 11, color: '#8b949e', marginTop: 4 }, paletteContent: { flex: 1, overflowY: 'auto', padding: 8 }, categorySection: { marginBottom: 16 }, categoryHeader: { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 8, background: '#21262d', borderRadius: 6 }, categoryIcon: { fontSize: 16 }, categoryTitle: { fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', color: '#8b949e' }, componentList: { display: 'flex', flexDirection: 'column', gap: 4 }, componentItem: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#21262d', borderRadius: 6, cursor: 'grab', transition: 'background .15s', userSelect: 'none' }, componentIcon: { fontSize: 18, width: 24, textAlign: 'center' }, componentName: { flex: 1, fontSize: 13, color: '#e6edf3' }, readyBadge: { fontSize: 10, padding: '2px 6px', background: '#0d2818', color: '#3fb950', borderRadius: 3, textTransform: 'uppercase' },
 };
