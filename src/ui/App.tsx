@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Toolbar } from './Toolbar.js';
 import { ComponentPalette } from './ComponentPalette.js';
 import { CanvasRenderer } from './CanvasRenderer.js';
+import { PhysicalComponentsOverlay } from './PhysicalComponentsOverlay.js';
 import { InspectorPanel } from './InspectorPanel.js';
 import { CodeEditor } from './CodeEditor.js';
 import { InstrumentPanel } from './InstrumentPanel.js';
@@ -86,7 +87,10 @@ export function App() {
               <button onClick={() => setViewMode('schematic')} style={{ ...styles.viewTab, ...(viewMode === 'schematic' ? styles.activeView : {}) }}>Schematic</button>
             </div>
             <div style={styles.canvasWrapper}>
-              {viewMode === 'circuit' ? <CanvasRenderer /> : <SchematicPanel />}
+              {viewMode === 'circuit' ? <>
+                <CanvasRenderer />
+                <PhysicalComponentsOverlay />
+              </> : <SchematicPanel />}
               {showHud && viewMode === 'circuit' && <div style={styles.canvasHud}><span>Scroll: zoom</span><span>Space + drag: pan</span><span>Drag pin: wire</span><span>Shift: multi-select</span></div>}
             </div>
             <div style={{ ...styles.bottomDock, height: bottomOpen ? 320 : 38 }}>
