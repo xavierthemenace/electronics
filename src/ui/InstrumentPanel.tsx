@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useCircuitStore } from '../stores/circuit.js';
 import { useSimulationStore } from '../stores/simulation.js';
 import { LogicAnalyzer } from './LogicAnalyzer.js';
+import { SerialAnalyzer } from './SerialAnalyzer.js';
 
 const panel: React.CSSProperties = { height: '100%', minHeight: 0, overflow: 'auto', padding: 12, background: '#161b22', color: '#e6edf3', fontSize: 12 };
 const card: React.CSSProperties = { border: '1px solid #30363d', borderRadius: 6, background: '#0d1117', padding: 10, marginBottom: 10 };
@@ -116,6 +117,7 @@ export function InstrumentPanel() {
             <div style={{ marginTop: 10 }}>
               <LogicAnalyzer transitions={arduinoResult.state.transitions} />
             </div>
+            <SerialAnalyzer events={arduinoResult.state.serialEvents} />
           </>
         ) : <div style={{ color: '#6e7681' }}>Run the firmware, then simulate DC to drive connected Arduino outputs.</div>}
       </div>
