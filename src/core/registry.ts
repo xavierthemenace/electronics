@@ -4,6 +4,7 @@ import { peripheralDefs } from './peripherals.js';
 import { actuatorDefs } from './devices.js';
 import { displayDefs } from './display.js';
 import { busPeripheralDefs } from './busPeripheralDefs.js';
+import { activeModelDefs } from './activeModels.js';
 
 export const groundDef = defineComponent({
   type: 'ground', name: 'Ground', category: 'infrastructure', status: 'modelled',
@@ -53,22 +54,9 @@ function diodeModel(type: 'diode' | 'led') {
 export const diodeDef = defineComponent({ type: 'diode', name: 'Diode', category: 'semiconductor', status: 'modelled', pins: [{ id: 'a', name: 'Anode', kind: 'passive' }, { id: 'k', name: 'Cathode', kind: 'passive' }], params: { saturationCurrent: { default: 8.2e-10, unit: 'A' }, ideality: { default: 1.7, unit: '' }, seriesResistance: { default: 0, unit: 'Ω' } }, docs: { description: 'Shockley diode educational model.' }, device: diodeModel('diode') });
 export const ledDef = defineComponent({ type: 'led', name: 'LED', category: 'actuator', status: 'modelled', pins: [{ id: 'a', name: 'Anode (+)', kind: 'passive' }, { id: 'k', name: 'Cathode (−)', kind: 'passive' }], params: { saturationCurrent: { default: 1e-17, unit: 'A' }, ideality: { default: 2.3, unit: '' }, forwardVoltage: { default: 2, unit: 'V' }, maxForwardCurrent: { default: 0.02, unit: 'A' }, reverseVoltageMax: { default: 5, unit: 'V' }, color: { default: 'red', unit: '' } }, docs: { description: 'Light-emitting diode with an educational Shockley approximation.' }, device: diodeModel('led') });
 
-const planned = (type: string, name: string, category: string, pins: any[], params: any = {}, description = '') => defineComponent({ type, name, category, status: 'planned', pins, params, docs: { description } });
-export const plannedDefs: ComponentDef[] = [
-  planned('capacitor', 'Capacitor', 'passive', [{ id: '1', name: '1', kind: 'passive' }, { id: '2', name: '2', kind: 'passive' }], { capacitance: { default: 1e-6, unit: 'F' } }, 'Transient energy storage.'),
-  planned('inductor', 'Inductor', 'passive', [{ id: '1', name: '1', kind: 'passive' }, { id: '2', name: '2', kind: 'passive' }], { inductance: { default: 1e-3, unit: 'H' } }, 'Magnetic energy storage.'),
-  planned('potentiometer', 'Potentiometer', 'passive', [{ id: 'a', name: 'A', kind: 'passive' }, { id: 'w', name: 'Wiper', kind: 'passive' }, { id: 'b', name: 'B', kind: 'passive' }], { resistance: { default: 10000, unit: 'Ω' }, wiper: { default: 0.5, unit: '' } }, 'Variable voltage divider.'),
-  planned('zener', 'Zener Diode', 'semiconductor', [{ id: 'a', name: 'Anode', kind: 'passive' }, { id: 'k', name: 'Cathode', kind: 'passive' }], { zenerVoltage: { default: 5.1, unit: 'V' } }, 'Reverse-breakdown voltage regulation.'),
-  planned('bjt-npn', 'BJT (NPN)', 'semiconductor', [{ id: 'b', name: 'Base', kind: 'input' }, { id: 'c', name: 'Collector', kind: 'passive' }, { id: 'e', name: 'Emitter', kind: 'passive' }], { beta: { default: 100 } }, 'BJT switching model.'),
-  planned('mosfet-n', 'MOSFET (N-channel)', 'semiconductor', [{ id: 'g', name: 'Gate', kind: 'input' }, { id: 'd', name: 'Drain', kind: 'passive' }, { id: 's', name: 'Source', kind: 'passive' }], { vth: { default: 2, unit: 'V' }, rdsOn: { default: 0.05, unit: 'Ω' } }, 'Logic-level NMOS switch.'),
-  planned('and', 'AND Gate', 'digital', [{ id: 'a', name: 'A', kind: 'input' }, { id: 'b', name: 'B', kind: 'input' }, { id: 'y', name: 'Y', kind: 'output' }], {}, 'Combinational AND gate.'),
-  planned('not', 'NOT Gate', 'digital', [{ id: 'a', name: 'A', kind: 'input' }, { id: 'y', name: 'Y', kind: 'output' }], {}, 'Combinational inverter.'),
-  planned('arduino-uno', 'Arduino Uno', 'embedded', [{ id: '5v', name: '5V', kind: 'power' }, { id: 'gnd', name: 'GND', kind: 'ground' }, { id: 'd13', name: 'D13', kind: 'digital' }, { id: 'd9', name: 'D9', kind: 'pwm' }, { id: 'a0', name: 'A0', kind: 'analog' }], { vcc: { default: 5, unit: 'V' } }, 'Arduino-compatible MCU with teaching runtime support.'),
-];
-
 const _byType = new Map<string, ComponentDef>();
 function _register(def: ComponentDef): void { if (_byType.has(def.type)) throw new Error(`Duplicate component type: ${def.type}`); _byType.set(def.type, def); }
-[groundDef, dcSourceDef, resistorDef, diodeDef, ledDef, ...plannedDefs, ...peripheralDefs, ...actuatorDefs, ...displayDefs, ...busPeripheralDefs].forEach(_register);
+[groundDef, dcSourceDef, resistorDef, diodeDef, ledDef, ...activeModelDefs, ...peripheralDefs, ...actuatorDefs, ...displayDefs, ...busPeripheralDefs].forEach(_register);
 export function getDefinition(type: string): ComponentDef | null { return _byType.get(type) ?? null; }
 export function listComponents(): ComponentDef[] { return [..._byType.values()]; }
 export function isModelled(type: string): boolean { const d = getDefinition(type); return !!d && d.status === 'modelled'; }
