@@ -19,6 +19,7 @@ import { useProjectStore } from '../stores/project.js';
 import { useCircuitStore } from '../stores/circuit.js';
 import { useCodeStore } from '../stores/code.js';
 import { useBreadboardStore } from '../stores/breadboard.js';
+import { useSimulationStore } from '../stores/simulation.js';
 
 type BottomTab = 'lesson' | 'code' | 'instruments' | 'communication' | 'breadboard' | 'peripherals' | 'devices' | 'systems';
 type ViewMode = 'circuit' | 'schematic';
@@ -31,11 +32,13 @@ export function App() {
   const [projectHubOpen, setProjectHubOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showHud, setShowHud] = useState(true);
+
   useEffect(() => {
     const handler = (e: Event) => setShowHud((e as CustomEvent<{ showHud?: boolean }>).detail?.showHud !== false);
     window.addEventListener('electronics-settings', handler);
     return () => window.removeEventListener('electronics-settings', handler);
   }, []);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
@@ -43,16 +46,13 @@ export function App() {
       else if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); useCircuitStore.getState().undo(); }
       else if (mod && ((e.key.toLowerCase() === 'z' && e.shiftKey) || e.key.toLowerCase() === 'y')) { e.preventDefault(); useCircuitStore.getState().redo(); }
       else if (mod && e.key.toLowerCase() === 'n') { e.preventDefault(); void useProjectStore.getState().newProject(); }
-      else if (e.key === 'F5') { e.preventDefault(); useSimulationRun(); }
+      else if (e.key === 'F5') { e.preventDefault(); useSimulationStore.getState().runDC(); }
       else if (e.key === 'Home') { useCircuitStore.getState().resetViewport(); }
     };
-    const useSimulationRun = () => useSimulationStoreShim();
-    const useSimulationStoreShim = () => { const store = (globalThis as typeof globalThis & { __electronicsRunDC?: () => void }).__electronicsRunDC; if (store) store(); else window.dispatchEvent(new Event('electronics-run-dc')); };
     window.addEventListener('keydown', handler);
-    const runListener = () => { const run = (window as Window & { __electronicsRunDCImpl?: () => void }).__electronicsRunDCImpl; run?.(); };
-    window.addEventListener('electronics-run-dc', runListener);
-    return () => { window.removeEventListener('keydown', handler); window.removeEventListener('electronics-run-dc', runListener); };
+    return () => window.removeEventListener('keydown', handler);
   }, []);
+
   useEffect(() => {
     let timer: number | undefined;
     const write = () => {
@@ -68,10 +68,12 @@ export function App() {
     schedule();
     return () => { if (timer) window.clearTimeout(timer); unsubCircuit(); unsubCode(); unsubBreadboard(); };
   }, []);
+
   const tabs: Array<[BottomTab, string]> = [
     ['lesson', '▣ Learn'], ['code', '⌘ Code'], ['instruments', '◉ Instruments'], ['communication', '⇄ Communication'],
     ['breadboard', '▦ Breadboard'], ['peripherals', '◌ I/O'], ['devices', '⚙ Devices'], ['systems', '▤ Systems'],
   ];
+
   return (
     <ErrorBoundary>
       <div style={styles.app}>
