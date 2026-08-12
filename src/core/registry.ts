@@ -5,6 +5,8 @@
 import { defineComponent } from './define.js';
 import type { ComponentDef } from './model.js';
 import { peripheralDefs } from './peripherals.js';
+import { actuatorDefs } from './devices.js';
+import { displayDefs } from './display.js';
 
 export const groundDef = defineComponent({
   type: 'ground', name: 'Ground', category: 'infrastructure', status: 'modelled',
@@ -89,7 +91,7 @@ export const plannedDefs: ComponentDef[] = [
 
 const _byType = new Map<string, ComponentDef>();
 function _register(def: ComponentDef): void { if (_byType.has(def.type)) throw new Error(`Duplicate component type: ${def.type}`); _byType.set(def.type, def); }
-[groundDef, dcSourceDef, resistorDef, diodeDef, ledDef, ...plannedDefs, ...peripheralDefs].forEach(_register);
+[groundDef, dcSourceDef, resistorDef, diodeDef, ledDef, ...plannedDefs, ...peripheralDefs, ...actuatorDefs, ...displayDefs].forEach(_register);
 
 export function getDefinition(type: string): ComponentDef | null { return _byType.get(type) ?? null; }
 export function listComponents(): ComponentDef[] { return [..._byType.values()]; }
