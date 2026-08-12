@@ -23,9 +23,14 @@ export function buildArduinoRuntimeProject(
   const ground = project.components.find(c => c.type === 'ground');
   if (!arduino || !ground) return project;
 
-  const vcc = Number(arduino.params.vcc ?? 5);
-  const components: CircuitComponent[] = project.components.map(c => ({ ...c, params: { ...c.params } }));
-  const wires: Wire[] = [...project.wires.map(w => ({ a: { ...w.a }, b: { ...w.b } }))];
+  const anchor = arduino.position ?? { x: 0, y: 0 };
+  const vcc = Number(arduino.params?.vcc ?? 5);
+  const components: CircuitComponent[] = project.components.map(c => ({
+    ...c,
+    params: { ...(c.params ?? {}) },
+    position: c.position ?? { x: 0, y: 0 },
+  }));
+  const wires: Wire[] = [...(project.wires ?? []).map(w => ({ a: { ...w.a }, b: { ...w.b } }))];
 
   for (const pin of ARDUINO_PINS.digital) {
     const mode = runtime.state.pinMode[pin];
@@ -37,14 +42,13 @@ export function buildArduinoRuntimeProject(
       : (runtime.state.digital[pin] ? vcc : 0);
 
     const virtualId = `__arduino_gpio_${arduino.id}_d${pin}`;
-    const existing = components.some(c => c.id === virtualId);
-    if (existing) continue;
+    if (components.some(c => c.id === virtualId)) continue;
 
     components.push({
       id: virtualId,
       type: 'dc-source',
       params: { voltage },
-      position: { x: arduino.position.x, y: arduino.position.y },
+      position: { x: anchor.x, y: anchor.y },
       rotation: 0,
     });
 
