@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { CircuitProject } from '../core/model.js';
 import { useCircuitStore } from './circuit.js';
+import { useBreadboardStore } from './breadboard.js';
 import { DEFAULT_ARDUINO_CODE, useCodeStore } from './code.js';
 
 interface ProjectState {
@@ -24,7 +25,9 @@ export const useProjectStore = create<ProjectState>()(immer((set, get) => ({
 
   newProject: async () => {
     if (get().modified && !confirm('Discard unsaved changes?')) return;
-    useCircuitStore.getState().loadProject({ name: DEFAULT_PROJECT_NAME, components: [], wires: [], sourceCode: DEFAULT_ARDUINO_CODE, metadata: { createdAt: Date.now(), modifiedAt: Date.now(), version: 1, gridSize: 20 } });
+    const fresh = { name: DEFAULT_PROJECT_NAME, components: [], wires: [], sourceCode: DEFAULT_ARDUINO_CODE, metadata: { createdAt: Date.now(), modifiedAt: Date.now(), version: 1, gridSize: 20 } } as CircuitProject;
+    useCircuitStore.getState().loadProject(fresh);
+    useBreadboardStore.getState().reset();
     useCodeStore.getState().loadSourceCode(DEFAULT_ARDUINO_CODE);
     set(s => { s.name = DEFAULT_PROJECT_NAME; s.modified = false; s.fileHandle = null; s.lastSaved = 0; });
   },
@@ -42,6 +45,16 @@ export const useProjectStore = create<ProjectState>()(immer((set, get) => ({
   exportJSON: () => JSON.stringify(get().getCircuitProject(), null, 2),
   importJSON: (json) => { const proj = JSON.parse(json) as CircuitProject; get().loadCircuitProject(proj); },
   exportToHandle: async (handle) => { const writable = await handle.createWritable(); await writable.write(get().exportJSON()); await writable.close(); },
-  loadCircuitProject: (proj) => { useCircuitStore.getState().loadProject(proj); useCodeStore.getState().loadSourceCode(proj.sourceCode); useCircuitStore.getState().saveToHistory(); },
-  getCircuitProject: () => ({ ...useCircuitStore.getState().getProject(), name: get().name, sourceCode: useCodeStore.getState().sourceCode }),
+  loadCircuitProject: (proj) => {
+    useCircuitStore.getState().loadProject(proj);
+    useBreadboardStore.getState().load(proj.breadboard as any);
+    useCodeStore.getState().loadSourceCode(proj.sourceCode);
+    useCircuitStore.getState().saveToHistory();
+  },
+  getCircuitProject: () => ({
+    ...useCircuitStore.getState().getProject(),
+    name: get().name,
+    sourceCode: useCodeStore.getState().sourceCode,
+    breadboard: useBreadboardStore.getState().get(),
+  }),
 })));
