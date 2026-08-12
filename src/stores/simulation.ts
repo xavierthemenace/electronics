@@ -5,6 +5,7 @@ import { runERC, type Violation } from '../core/erc.js';
 import { simulateTransient, type TransientResult } from '../core/transient.js';
 import { runArduino, type ArduinoRunResult } from '../core/arduinoRuntime.js';
 import { buildArduinoRuntimeProject } from '../core/arduinoBridge.js';
+import { buildArduinoDeviceRuntimeProject } from '../core/deviceBridge.js';
 import { buildBreadboardRuntimeProject } from '../core/breadboardBridge.js';
 import { deriveArduinoInputs } from '../core/inputBridge.js';
 import { useCircuitStore } from './circuit.js';
@@ -106,7 +107,10 @@ export const useSimulationStore = create<SimulationState & SimulationActions>()(
           return;
         }
         proj = buildBreadboardRuntimeProject(proj, useBreadboardStore.getState().get());
-        if (firmware && arduino) proj = buildArduinoRuntimeProject(proj, firmware);
+        if (firmware && arduino) {
+          proj = buildArduinoRuntimeProject(proj, firmware);
+          proj = buildArduinoDeviceRuntimeProject(proj, firmware);
+        }
         const result = solveDC(proj);
         const violations = runERC(proj, result);
         set((state) => { state.dcResult = result; state.dcViolations = violations; state.lastSolveTime = Date.now(); state.running = false; });
