@@ -7,9 +7,10 @@ import { CodeEditor } from './CodeEditor.js';
 import { InstrumentPanel } from './InstrumentPanel.js';
 import { LessonPanel } from './LessonPanel.js';
 import { CommunicationPanel } from './CommunicationPanel.js';
+import { BreadboardPanel } from './BreadboardPanel.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 
-type BottomTab = 'lesson' | 'code' | 'instruments' | 'communication';
+type BottomTab = 'lesson' | 'code' | 'instruments' | 'communication' | 'breadboard';
 
 export function App() {
   const [bottomTab, setBottomTab] = useState<BottomTab>('lesson');
@@ -28,12 +29,13 @@ export function App() {
                 <span>Scroll: zoom</span><span>Space + drag: pan</span><span>Drag pin: wire</span><span>Shift: multi-select</span>
               </div>
             </div>
-            <div style={{ ...styles.bottomDock, height: bottomOpen ? 300 : 38 }}>
+            <div style={{ ...styles.bottomDock, height: bottomOpen ? 320 : 38 }}>
               <div style={styles.dockTabs}>
                 <button style={{ ...styles.tab, ...(bottomTab === 'lesson' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('lesson'); setBottomOpen(true); }}>▣ Learn</button>
                 <button style={{ ...styles.tab, ...(bottomTab === 'code' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('code'); setBottomOpen(true); }}>⌘ Code</button>
                 <button style={{ ...styles.tab, ...(bottomTab === 'instruments' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('instruments'); setBottomOpen(true); }}>◉ Instruments</button>
                 <button style={{ ...styles.tab, ...(bottomTab === 'communication' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('communication'); setBottomOpen(true); }}>⇄ Communication</button>
+                <button style={{ ...styles.tab, ...(bottomTab === 'breadboard' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('breadboard'); setBottomOpen(true); }}>▦ Breadboard</button>
                 <div style={{ flex: 1 }} />
                 <button style={styles.dockButton} onClick={() => setBottomOpen(v => !v)}>{bottomOpen ? '⌄' : '⌃'}</button>
               </div>
@@ -42,6 +44,7 @@ export function App() {
                 {bottomTab === 'code' && <CodeEditor />}
                 {bottomTab === 'instruments' && <InstrumentPanel />}
                 {bottomTab === 'communication' && <CommunicationPanel />}
+                {bottomTab === 'breadboard' && <BreadboardPanel />}
               </div>}
             </div>
           </div>
