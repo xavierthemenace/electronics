@@ -6,6 +6,7 @@ import { simulateTransient, type TransientResult } from '../core/transient.js';
 import { runArduino, type ArduinoRunResult } from '../core/arduinoRuntime.js';
 import { buildArduinoRuntimeProject } from '../core/arduinoBridge.js';
 import { buildBreadboardRuntimeProject } from '../core/breadboardBridge.js';
+import { deriveArduinoInputs } from '../core/inputBridge.js';
 import { useCircuitStore } from './circuit.js';
 import { useCodeStore } from './code.js';
 import { useBreadboardStore } from './breadboard.js';
@@ -76,10 +77,12 @@ export const useSimulationStore = create<SimulationState & SimulationActions>()(
 
     runFirmware: () => {
       const source = useCodeStore.getState().sourceCode;
-      const result = runArduino(source, {
-        digitalInputs: get().arduinoDigitalInputs,
-        analogInputs: get().arduinoAnalogInputs,
+      const project = useCircuitStore.getState().getProject();
+      const derived = deriveArduinoInputs(project, {
+        digital: get().arduinoDigitalInputs,
+        analog: get().arduinoAnalogInputs,
       });
+      const result = runArduino(source, derived);
       set((state) => { state.arduinoResult = result; });
       return result;
     },
