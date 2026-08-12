@@ -1,4 +1,7 @@
+export type ArduinoPinMode = 'INPUT' | 'OUTPUT' | 'INPUT_PULLUP';
+
 export interface ArduinoRuntimeState {
+  pinMode: Record<number, ArduinoPinMode>;
   digital: Record<number, 0 | 1>;
   analog: Record<number, number>;
   pwm: Record<number, number>;
@@ -14,7 +17,7 @@ export interface ArduinoRunResult {
 }
 
 function initialState(): ArduinoRuntimeState {
-  return { digital: {}, analog: {}, pwm: {}, serial: [], elapsedMs: 0, warnings: [] };
+  return { pinMode: {}, digital: {}, analog: {}, pwm: {}, serial: [], elapsedMs: 0, warnings: [] };
 }
 
 function valueOf(token: string, constants: Record<string, number>): number {
@@ -60,13 +63,27 @@ export function runArduino(source: string, maxSteps = 200): ArduinoRunResult {
       if (!line) continue;
 
       let m = line.match(/^pinMode\s*\(\s*([^,]+),\s*(INPUT|OUTPUT|INPUT_PULLUP)\s*\)/);
-      if (m) continue;
+      if (m) {
+        state.pinMode[valueOf(m[1], constants)] = m[2] as ArduinoPinMode;
+        if (m[2] === 'INPUT_PULLUP') state.digital[valueOf(m[1], constants)] = 1;
+        continue;
+      }
 
       m = line.match(/^digitalWrite\s*\(\s*([^,]+),\s*(HIGH|LOW|1|0)\s*\)/);
-      if (m) { state.digital[valueOf(m[1], constants)] = m[2] === 'HIGH' || m[2] === '1' ? 1 : 0; continue; }
+      if (m) {
+        const pin = valueOf(m[1], constants);
+        state.digital[pin] = m[2] === 'HIGH' || m[2] === '1' ? 1 : 0;
+        continue;
+      }
 
       m = line.match(/^analogWrite\s*\(\s*([^,]+),\s*([^\)]+)\)/);
-      if (m) { const pin = valueOf(m[1], constants); state.pwm[pin] = Math.max(0, Math.min(255, valueOf(m[2], constants))); continue; }
+      if (m) {
+        const pin = valueOf(m[1], constants);
+        state.pinMode[pin] = 'OUTPUT';
+        state.pwm[pin] = Math.max(0, Math.min(255, valueOf(m[2], constants)));
+        state.digital[pin] = state.pwm[pin] >= 128 ? 1 : 0;
+        continue;
+      }
 
       m = line.match(/^analogRead\s*\(\s*([^\)]+)\)/);
       if (m) continue;
