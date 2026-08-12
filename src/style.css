@@ -1,0 +1,37 @@
+/**
+ * Global styles for Electronics Mastery Lab — Production Editor
+ * Imports the design system global CSS
+ */
+
+@import './ui/design/global.css';
+
+/* Additional overrides for Monaco editor */
+.monaco-editor {
+  background: var(--color-bg-panel) !important;
+}
+
+/* File input hide */
+input[type="file"] {
+  display: none;
+}
+
+/* Canvas */
+canvas {
+  touch-action: none;
+}
+
+/* Button base */
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Input number spinner visibility */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
