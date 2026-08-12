@@ -1,11 +1,18 @@
 export type ArduinoPinMode = 'INPUT' | 'OUTPUT' | 'INPUT_PULLUP';
 
+export interface ArduinoTransition {
+  pin: number;
+  timeMs: number;
+  value: 0 | 1;
+}
+
 export interface ArduinoRuntimeState {
   pinMode: Record<number, ArduinoPinMode>;
   digital: Record<number, 0 | 1>;
   analog: Record<number, number>;
   pwm: Record<number, number>;
   serial: string[];
+  transitions: ArduinoTransition[];
   elapsedMs: number;
   warnings: string[];
 }
@@ -17,7 +24,7 @@ export interface ArduinoRunResult {
 }
 
 function initialState(): ArduinoRuntimeState {
-  return { pinMode: {}, digital: {}, analog: {}, pwm: {}, serial: [], elapsedMs: 0, warnings: [] };
+  return { pinMode: {}, digital: {}, analog: {}, pwm: {}, serial: [], transitions: [], elapsedMs: 0, warnings: [] };
 }
 
 function valueOf(token: string, constants: Record<string, number>): number {
@@ -64,15 +71,16 @@ export function runArduino(source: string, maxSteps = 200): ArduinoRunResult {
 
       let m = line.match(/^pinMode\s*\(\s*([^,]+),\s*(INPUT|OUTPUT|INPUT_PULLUP)\s*\)/);
       if (m) {
-        state.pinMode[valueOf(m[1], constants)] = m[2] as ArduinoPinMode;
-        if (m[2] === 'INPUT_PULLUP') state.digital[valueOf(m[1], constants)] = 1;
+        const pin = valueOf(m[1], constants);
+        state.pinMode[pin] = m[2] as ArduinoPinMode;
+        if (m[2] === 'INPUT_PULLUP') setDigital(state, pin, 1);
         continue;
       }
 
       m = line.match(/^digitalWrite\s*\(\s*([^,]+),\s*(HIGH|LOW|1|0)\s*\)/);
       if (m) {
         const pin = valueOf(m[1], constants);
-        state.digital[pin] = m[2] === 'HIGH' || m[2] === '1' ? 1 : 0;
+        setDigital(state, pin, m[2] === 'HIGH' || m[2] === '1' ? 1 : 0);
         continue;
       }
 
@@ -81,7 +89,7 @@ export function runArduino(source: string, maxSteps = 200): ArduinoRunResult {
         const pin = valueOf(m[1], constants);
         state.pinMode[pin] = 'OUTPUT';
         state.pwm[pin] = Math.max(0, Math.min(255, valueOf(m[2], constants)));
-        state.digital[pin] = state.pwm[pin] >= 128 ? 1 : 0;
+        setDigital(state, pin, state.pwm[pin] >= 128 ? 1 : 0);
         continue;
       }
 
@@ -107,4 +115,12 @@ export function runArduino(source: string, maxSteps = 200): ArduinoRunResult {
 
   if (steps >= maxSteps) state.warnings.push('Execution stopped at the teaching runtime step limit.');
   return { state, steps, errors };
+}
+
+function setDigital(state: ArduinoRuntimeState, pin: number, value: 0 | 1): void {
+  const previous = state.digital[pin];
+  state.digital[pin] = value;
+  if (previous !== value) {
+    state.transitions.push({ pin, timeMs: state.elapsedMs, value });
+  }
 }
