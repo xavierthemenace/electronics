@@ -15,8 +15,17 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         <label style={styles.row}><span>Compact panels</span><input type="checkbox" checked={settings.compactPanels} onChange={e=>update('compactPanels',e.target.checked)} /></label>
         <label style={styles.row}><span>Confirm destructive actions</span><input type="checkbox" checked={settings.confirmDestructive} onChange={e=>update('confirmDestructive',e.target.checked)} /></label>
       </section>
-      <section style={styles.section}><h3>Persistence</h3><label style={styles.row}><span>Autosave browser backup</span><input type="checkbox" checked={settings.autoSave} onChange={e=>update('autoSave',e.target.checked)} /></label></section>
-      <section style={styles.section}><h3>Simulation</h3><label style={styles.row}><span>Numerical precision<select value={settings.simulationPrecision} onChange={e=>update('simulationPrecision',e.target.value as Settings['simulationPrecision'])} style={styles.select}><option value="standard">Standard</option><option value="high">High</option></select></label></section>
+      <section style={styles.section}><h3>Persistence</h3>
+        <label style={styles.row}><span>Autosave browser backup</span><input type="checkbox" checked={settings.autoSave} onChange={e=>update('autoSave',e.target.checked)} /></label>
+      </section>
+      <section style={styles.section}><h3>Simulation</h3>
+        <label style={styles.row}><span>Numerical precision</span>
+          <select aria-label="Numerical precision" value={settings.simulationPrecision} onChange={e=>update('simulationPrecision',e.target.value as Settings['simulationPrecision'])} style={styles.select}>
+            <option value="standard">Standard</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+      </section>
       <button onClick={()=>{localStorage.removeItem(key);setSettings(defaults)}} style={styles.reset}>Reset defaults</button>
     </div>
   </div>;
