@@ -10,13 +10,17 @@ import { immer } from 'zustand/middleware/immer';
 import { solveDC, deviceResult, nodeVoltage, type DeviceResult } from '../core/solver.js';
 import { runERC, type Violation } from '../core/erc.js';
 import { simulateTransient, type TransientResult } from '../core/transient.js';
+import { runArduino, type ArduinoRunResult } from '../core/arduinoRuntime.js';
+import { buildArduinoRuntimeProject } from '../core/arduinoBridge.js';
 import { useCircuitStore } from './circuit.js';
+import { useCodeStore } from './code.js';
 
 interface SimulationState {
   running: boolean;
   lastSolveTime: number;
   dcResult: Awaited<ReturnType<typeof solveDC>> | null;
   dcViolations: Violation[];
+  arduinoResult: ArduinoRunResult | null;
   transientRunning: boolean;
   transientTime: Float64Array;
   transientVoltage: Float64Array;
@@ -27,6 +31,7 @@ interface SimulationState {
   timeStep: number;
   currentTime: number;
   runDC: () => void;
+  runFirmware: () => ArduinoRunResult | null;
   runTransient: (probe?: { compId: string; pinId: string }) => void;
   stopSimulation: () => void;
   clearResults: () => void;
@@ -46,6 +51,7 @@ function createInitialState() {
     lastSolveTime: 0,
     dcResult: null,
     dcViolations: [],
+    arduinoResult: null,
     transientRunning: false,
     transientTime: new Float64Array(0),
     transientVoltage: new Float64Array(0),
@@ -59,7 +65,7 @@ function createInitialState() {
 }
 
 type SimulationActions = Pick<SimulationState,
-  'runDC' | 'runTransient' | 'stopSimulation' | 'clearResults' | 'setTransientStep' |
+  'runDC' | 'runFirmware' | 'runTransient' | 'stopSimulation' | 'clearResults' | 'setTransientStep' |
   'setTransientDuration' | 'setTransientProbe' | 'getNodeVoltage' | 'getDeviceCurrent' |
   'getDevicePower' | 'getDeviceBrightness' | 'getViolations'>;
 
@@ -67,15 +73,23 @@ export const useSimulationStore = create<SimulationState & SimulationActions>()(
   immer((set, get) => ({
     ...createInitialState(),
 
+    runFirmware: () => {
+      const source = useCodeStore.getState().sourceCode;
+      const result = runArduino(source);
+      set((state) => { state.arduinoResult = result; });
+      return result;
+    },
+
     runDC: () => {
       const circuitStore = useCircuitStore.getState();
-      const proj = circuitStore.getProject();
+      let proj = circuitStore.getProject();
 
       if (proj.components.length === 0) {
         set((state) => {
           state.dcResult = null;
           state.dcViolations = [];
           state.running = false;
+          state.arduinoResult = null;
         });
         return;
       }
@@ -83,6 +97,18 @@ export const useSimulationStore = create<SimulationState & SimulationActions>()(
       set((state) => { state.running = true; });
 
       try {
+        const arduino = proj.components.some(c => c.type === 'arduino-uno');
+        const firmware = arduino ? get().runFirmware() : null;
+        if (firmware && firmware.errors.length > 0) {
+          set((state) => {
+            state.running = false;
+            state.dcResult = { ok: false, error: firmware.errors.join(' '), nodeVoltages: new Float64Array(0), branchCurrents: new Float64Array(0), devBranches: [], iterations: 0, netlist: { pinNodes: [], nodeCount: 1, nets: [] } } as any;
+          });
+          return;
+        }
+
+        if (firmware && arduino) proj = buildArduinoRuntimeProject(proj, firmware);
+
         const result = solveDC(proj);
         const violations = runERC(proj, result);
         set((state) => {
@@ -147,6 +173,7 @@ export const useSimulationStore = create<SimulationState & SimulationActions>()(
     clearResults: () => set((state) => {
       state.dcResult = null;
       state.dcViolations = [];
+      state.arduinoResult = null;
       state.transientResult = null;
       state.transientTime = new Float64Array(0);
       state.transientVoltage = new Float64Array(0);
