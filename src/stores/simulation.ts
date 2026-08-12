@@ -12,8 +12,10 @@ import { runERC, type Violation } from '../core/erc.js';
 import { simulateTransient, type TransientResult } from '../core/transient.js';
 import { runArduino, type ArduinoRunResult } from '../core/arduinoRuntime.js';
 import { buildArduinoRuntimeProject } from '../core/arduinoBridge.js';
+import { buildBreadboardRuntimeProject } from '../core/breadboardBridge.js';
 import { useCircuitStore } from './circuit.js';
 import { useCodeStore } from './code.js';
+import { useBreadboardStore } from './breadboard.js';
 
 interface SimulationState {
   running: boolean;
@@ -107,6 +109,7 @@ export const useSimulationStore = create<SimulationState & SimulationActions>()(
           return;
         }
 
+        proj = buildBreadboardRuntimeProject(proj, useBreadboardStore.getState().get());
         if (firmware && arduino) proj = buildArduinoRuntimeProject(proj, firmware);
 
         const result = solveDC(proj);
@@ -128,11 +131,12 @@ export const useSimulationStore = create<SimulationState & SimulationActions>()(
 
     runTransient: (probe) => {
       const circuitStore = useCircuitStore.getState();
-      const proj = circuitStore.getProject();
+      let proj = circuitStore.getProject();
       const selectedProbe = probe ?? get().transientProbe ?? null;
 
       set((state) => { state.transientRunning = true; });
       try {
+        proj = buildBreadboardRuntimeProject(proj, useBreadboardStore.getState().get());
         const result = simulateTransient(proj, {
           duration: get().transientDuration,
           step: get().transientStep,
