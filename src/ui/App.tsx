@@ -10,16 +10,17 @@ import { CommunicationPanel } from './CommunicationPanel.js';
 import { BreadboardPanel } from './BreadboardPanel.js';
 import { PeripheralPanel } from './PeripheralPanel.js';
 import { DevicePanel } from './DevicePanel.js';
+import { SystemLabPanel } from './SystemLabPanel.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 
-type BottomTab = 'lesson' | 'code' | 'instruments' | 'communication' | 'breadboard' | 'peripherals' | 'devices';
+type BottomTab = 'lesson' | 'code' | 'instruments' | 'communication' | 'breadboard' | 'peripherals' | 'devices' | 'systems';
 
 export function App() {
   const [bottomTab, setBottomTab] = useState<BottomTab>('lesson');
   const [bottomOpen, setBottomOpen] = useState(true);
   const tabs: Array<[BottomTab, string]> = [
-    ['lesson', '▣ Learn'], ['code', '⌘ Code'], ['instruments', '◉ Instruments'],
-    ['communication', '⇄ Communication'], ['breadboard', '▦ Breadboard'], ['peripherals', '◌ I/O'], ['devices', '⚙ Devices'],
+    ['lesson', '▣ Learn'], ['code', '⌘ Code'], ['instruments', '◉ Instruments'], ['communication', '⇄ Communication'],
+    ['breadboard', '▦ Breadboard'], ['peripherals', '◌ I/O'], ['devices', '⚙ Devices'], ['systems', '▤ Systems'],
   ];
   return (
     <ErrorBoundary>
@@ -46,6 +47,7 @@ export function App() {
                 {bottomTab === 'breadboard' && <BreadboardPanel />}
                 {bottomTab === 'peripherals' && <PeripheralPanel />}
                 {bottomTab === 'devices' && <DevicePanel />}
+                {bottomTab === 'systems' && <SystemLabPanel />}
               </div>}
             </div>
           </div>
