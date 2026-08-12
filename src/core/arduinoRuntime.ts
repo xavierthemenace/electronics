@@ -6,12 +6,19 @@ export interface ArduinoTransition {
   value: 0 | 1;
 }
 
+export interface ArduinoSerialEvent {
+  timeMs: number;
+  text: string;
+  newline: boolean;
+}
+
 export interface ArduinoRuntimeState {
   pinMode: Record<number, ArduinoPinMode>;
   digital: Record<number, 0 | 1>;
   analog: Record<number, number>;
   pwm: Record<number, number>;
   serial: string[];
+  serialEvents: ArduinoSerialEvent[];
   transitions: ArduinoTransition[];
   elapsedMs: number;
   warnings: string[];
@@ -24,7 +31,7 @@ export interface ArduinoRunResult {
 }
 
 function initialState(): ArduinoRuntimeState {
-  return { pinMode: {}, digital: {}, analog: {}, pwm: {}, serial: [], transitions: [], elapsedMs: 0, warnings: [] };
+  return { pinMode: {}, digital: {}, analog: {}, pwm: {}, serial: [], serialEvents: [], transitions: [], elapsedMs: 0, warnings: [] };
 }
 
 function valueOf(token: string, constants: Record<string, number>): number {
@@ -99,14 +106,17 @@ export function runArduino(source: string, maxSteps = 200): ArduinoRunResult {
       m = line.match(/^delay\s*\(\s*([^\)]+)\)/);
       if (m) { state.elapsedMs += Math.max(0, valueOf(m[1], constants)); continue; }
 
-      m = line.match(/^Serial\.(?:print|println)\s*\(\s*([\s\S]*?)\s*\)/);
+      m = line.match(/^Serial\.(print|println)\s*\(\s*([\s\S]*?)\s*\)/);
       if (m) {
-        let text = m[1].trim();
-        if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) text = text.slice(1, -1);
+        let text = m[2].trim();
+        if ((text.startsWith('\"') && text.endsWith('\"')) || (text.startsWith("'") && text.endsWith("'"))) text = text.slice(1, -1);
+        const newline = m[1] === 'println';
         state.serial.push(text);
+        state.serialEvents.push({ timeMs: state.elapsedMs, text, newline });
         continue;
       }
 
+      if (/^Serial\.begin\s*\(/.test(line)) continue;
       if (/^(?:int|long|float|byte|bool)\s+/.test(line)) continue;
       if (/^\w+\s*=/.test(line)) continue;
       if (/^\w+\s*\(/.test(line)) state.warnings.push(`Unsupported call: ${line}`);
