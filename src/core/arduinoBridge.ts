@@ -40,11 +40,12 @@ export function applyArduinoRuntimeToProject(
         nextParams[`d${pin}Drive`] = 'Z';
         continue;
       }
+
       if (Object.prototype.hasOwnProperty.call(pwm, pin)) {
         nextParams[`d${pin}Drive`] = 'PWM';
         nextParams[`d${pin}Voltage`] = pwmVoltage(pwm[pin], vcc);
       } else {
-        nextParams[`d${pin}Drive`] = 'HIGH' in (digital[pin] === 1 ? { HIGH: true } : {}) ? 'HIGH' : 'LOW';
+        nextParams[`d${pin}Drive`] = digital[pin] === 1 ? 'HIGH' : 'LOW';
         nextParams[`d${pin}Voltage`] = digital[pin] ? vcc : 0;
       }
     }
