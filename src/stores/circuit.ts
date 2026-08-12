@@ -18,7 +18,7 @@ interface SelectionState {
 interface CircuitState {
   // Circuit data
   components: Map<string, CircuitComponent>;
-  wires: Wire[];
+  wires: Map<number, Wire>;  // Changed from array to Map for stable wire IDs
   nextWireId: number;
 
   // Selection
@@ -78,6 +78,7 @@ interface CircuitState {
 
   // Utility
   getComponent: (id: string) => CircuitComponent | undefined;
+  getWire: (wireId: number) => Wire | undefined;
   getConnectedWires: (compId: string, pinId: string) => { wire: Wire; id: number }[];
 }
 
@@ -87,7 +88,7 @@ const DEFAULT_GRID_SIZE = 20;
 function createInitialState(): Omit<CircuitState, keyof CircuitActions> {
   return {
     components: new Map(),
-    wires: [],
+    wires: new Map(),
     nextWireId: 0,
     selection: { componentIds: new Set(), wireIds: new Set() },
     viewport: DEFAULT_VIEWPORT,
@@ -126,6 +127,7 @@ type CircuitActions = {
   loadProject: (proj: CircuitProject) => void;
   getProject: () => CircuitProject;
   getComponent: (id: string) => CircuitComponent | undefined;
+  getWire: (wireId: number) => Wire | undefined;
   getConnectedWires: (compId: string, pinId: string) => { wire: Wire; id: number }[];
 };
 
@@ -139,18 +141,17 @@ export const useCircuitStore = create<CircuitState & CircuitActions>()(
     }),
 
     removeComponent: (id) => set((state) => {
-      const comp = state.components.get(id);
-      if (!comp) return;
       // Remove connected wires
-      state.wires = state.wires.filter((w, idx) => {
-        const connected = w.a.cid === id || w.b.cid === id;
-        if (connected) {
-          state.selection.wireIds.delete(idx);
+      const wiresToRemove: number[] = [];
+      state.wires.forEach((w, wireId) => {
+        if (w.a.cid === id || w.b.cid === id) {
+          wiresToRemove.push(wireId);
         }
-        return !connected;
       });
-      // Re-index wire IDs after removal
-      state.wires = state.wires; // keep as is, indices shift but selection uses Set
+      wiresToRemove.forEach(wireId => {
+        state.wires.delete(wireId);
+        state.selection.wireIds.delete(wireId);
+      });
       state.components.delete(id);
       state.selection.componentIds.delete(id);
     }),
@@ -181,26 +182,30 @@ export const useCircuitStore = create<CircuitState & CircuitActions>()(
     }),
 
     // Wires
-    addWire: ((wire: Wire) => set((state): number => {
-      const id = state.nextWireId++;
-      state.wires.push(wire);
-      return id;
-    })) as (wire: Wire) => number,
+    addWire: (wire: Wire) => {
+      let newWireId: number;
+      set((state) => {
+        newWireId = state.nextWireId++;
+        state.wires.set(newWireId, wire);
+      });
+      return newWireId!;
+    },
 
     removeWire: (wireId) => set((state) => {
-      if (wireId >= 0 && wireId < state.wires.length) {
-        state.wires[wireId] = null as any; // Mark as deleted, keep indices stable
-        state.selection.wireIds.delete(wireId);
-      }
+      state.wires.delete(wireId);
+      state.selection.wireIds.delete(wireId);
     }),
 
     removeWiresConnectedTo: (compId, pinId) => set((state) => {
-      state.wires = state.wires.map((w, idx) => {
-        if (w && ((w.a.cid === compId && w.a.pid === pinId) || (w.b.cid === compId && w.b.pid === pinId))) {
-          state.selection.wireIds.delete(idx);
-          return null as any;
+      const wiresToRemove: number[] = [];
+      state.wires.forEach((w, wireId) => {
+        if ((w.a.cid === compId && w.a.pid === pinId) || (w.b.cid === compId && w.b.pid === pinId)) {
+          wiresToRemove.push(wireId);
         }
-        return w;
+      });
+      wiresToRemove.forEach(wireId => {
+        state.wires.delete(wireId);
+        state.selection.wireIds.delete(wireId);
       });
     }),
 
@@ -228,8 +233,9 @@ export const useCircuitStore = create<CircuitState & CircuitActions>()(
 
     selectAll: () => set((state) => {
       state.selection.componentIds.clear();
+      state.selection.wireIds.clear();
       state.components.forEach((_, id) => state.selection.componentIds.add(id));
-      state.wires.forEach((_, idx) => state.selection.wireIds.add(idx));
+      state.wires.forEach((_, wireId) => state.selection.wireIds.add(wireId));
     }),
 
     // Viewport
@@ -296,8 +302,15 @@ export const useCircuitStore = create<CircuitState & CircuitActions>()(
     loadProject: (proj) => set((state) => {
       state.components.clear();
       for (const c of proj.components) state.components.set(c.id, c);
-      state.wires = proj.wires.filter(Boolean);
-      state.nextWireId = state.wires.length;
+      state.wires.clear();
+      // Restore wires with stable IDs
+      let maxWireId = -1;
+      proj.wires.forEach((wire, idx) => {
+        const wireId = idx; // Use sequential IDs from saved project
+        state.wires.set(wireId, wire);
+        if (wireId > maxWireId) maxWireId = wireId;
+      });
+      state.nextWireId = maxWireId + 1;
       state.selection.componentIds.clear();
       state.selection.wireIds.clear();
       if (proj.metadata?.gridSize) state.gridSize = proj.metadata.gridSize;
@@ -308,7 +321,7 @@ export const useCircuitStore = create<CircuitState & CircuitActions>()(
       return createProject({
         name: 'Untitled Circuit',
         components: [...components.values()],
-        wires: wires.filter(Boolean) as Wire[],
+        wires: [...wires.values()],
         metadata: { createdAt: Date.now(), modifiedAt: Date.now(), version: 1, gridSize },
       });
     },
@@ -316,13 +329,18 @@ export const useCircuitStore = create<CircuitState & CircuitActions>()(
     // Utility
     getComponent: (id) => get().components.get(id),
 
+    getWire: (wireId) => get().wires.get(wireId),
+
     getConnectedWires: (compId, pinId) => {
       const { wires } = get();
-      return wires
-        .map((w, idx) => ({ wire: w, id: idx }))
-        .filter(({ wire }) => wire &&
-          ((wire.a.cid === compId && wire.a.pid === pinId) ||
-           (wire.b.cid === compId && wire.b.pid === pinId)));
+      const result: { wire: Wire; id: number }[] = [];
+      wires.forEach((wire, wireId) => {
+        if ((wire.a.cid === compId && wire.a.pid === pinId) ||
+            (wire.b.cid === compId && wire.b.pid === pinId)) {
+          result.push({ wire, id: wireId });
+        }
+      });
+      return result;
     },
   }))
 );

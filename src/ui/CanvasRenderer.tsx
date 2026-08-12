@@ -590,12 +590,12 @@ export function CanvasRenderer() {
 
     const drawWires = (ctx: CanvasRenderingContext2D) => {
       const circuitStore = useCircuitStore.getState();
-      wires.forEach((wire, idx) => {
+      wires.forEach((wire, wireId) => {
         if (!wire) return;
         const path = getWirePath(wire, circuitStore);
         if (!path) return;
 
-        const selected = selection.wireIds.has(idx) || hoveredWire === idx;
+        const selected = selection.wireIds.has(wireId) || hoveredWire === wireId;
         ctx.strokeStyle = selected ? WIRE_COLOR_SELECTED : WIRE_COLOR;
         ctx.lineWidth = selected ? 3 / viewport.zoom : 2 / viewport.zoom;
         ctx.lineCap = 'round';
