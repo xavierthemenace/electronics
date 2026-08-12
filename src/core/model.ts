@@ -12,18 +12,34 @@ export interface Wire { a: TerminalRef; b: TerminalRef; }
 export interface TerminalRef { cid: string; pid: string; }
 export interface CircuitNet { id: string; node: number; name: string; isGround: boolean; members: TerminalRef[]; }
 export interface Netlist { pinNodes: PinNode[]; nodeCount: number; nets: CircuitNet[]; }
-export interface PinNode { compId: string; compType: string; pinId: string; node: number; root: string; }
+
+export interface BreadboardProjectData {
+  rows: number;
+  columns: number;
+  holes: Array<{ id: string; row: number; column: number; bank: 'left' | 'right'; side: 'top' | 'bottom'; rail?: '+' | '-' }>;
+  jumpers: Array<{ id: string; a: string; b: string }>;
+  placements: Array<{ componentId: string; pinId: string; holeId: string }>;
+}
+
 export interface CircuitProject {
   name: string;
   components: CircuitComponent[];
   wires: Wire[];
   sourceCode?: string;
+  breadboard?: BreadboardProjectData;
   metadata?: { createdAt: number; modifiedAt: number; version: number; gridSize?: number };
 }
 
 export function project(partial: Partial<CircuitProject> = {}): CircuitProject {
   const now = Date.now();
-  return { name: partial.name ?? 'Untitled Circuit', components: partial.components ?? [], wires: partial.wires ?? [], sourceCode: partial.sourceCode, metadata: { createdAt: partial.metadata?.createdAt ?? now, modifiedAt: partial.metadata?.modifiedAt ?? now, version: partial.metadata?.version ?? 1, gridSize: partial.metadata?.gridSize ?? 20 } };
+  return {
+    name: partial.name ?? 'Untitled Circuit',
+    components: partial.components ?? [],
+    wires: partial.wires ?? [],
+    sourceCode: partial.sourceCode,
+    breadboard: partial.breadboard,
+    metadata: { createdAt: partial.metadata?.createdAt ?? now, modifiedAt: partial.metadata?.modifiedAt ?? now, version: partial.metadata?.version ?? 1, gridSize: partial.metadata?.gridSize ?? 20 },
+  };
 }
 
 export function component(id: string, type: string, params: Record<string, unknown> = {}, position = { x: 0, y: 0 }, rotation = 0): CircuitComponent { return { id, type, params, position, rotation }; }
