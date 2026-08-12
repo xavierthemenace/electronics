@@ -49,6 +49,6 @@ const styles: Record<string, React.CSSProperties> = {
   canvasHud: { position: 'absolute', left: 10, bottom: 10, display: 'flex', gap: 6, flexWrap: 'wrap', pointerEvents: 'none', opacity: .75 },
   bottomDock: { flexShrink: 0, display: 'flex', flexDirection: 'column', borderTop: '1px solid #30363d', background: '#161b22', transition: 'height 120ms ease' },
   dockTabs: { height: 38, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2, padding: '0 8px', borderBottom: '1px solid #21262d' },
-  tab: (active: boolean): React.CSSProperties => ({ height: 30, padding: '0 12px', border: 0, borderBottom: active ? '2px solid #58a6ff' : '2px solid transparent', background: active ? '#21262d' : 'transparent', color: active ? '#e6edf3' : '#8b949e', cursor: 'pointer', fontSize: 12 }),
+  tab: { height: 30, padding: '0 12px', border: 0, background: 'transparent', color: '#8b949e', cursor: 'pointer', fontSize: 12 },
   dockButton: { border: 0, background: 'transparent', color: '#8b949e', cursor: 'pointer', fontSize: 16 },
 };
