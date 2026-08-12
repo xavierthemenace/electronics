@@ -6,9 +6,10 @@ import { InspectorPanel } from './InspectorPanel.js';
 import { CodeEditor } from './CodeEditor.js';
 import { InstrumentPanel } from './InstrumentPanel.js';
 import { LessonPanel } from './LessonPanel.js';
+import { CommunicationPanel } from './CommunicationPanel.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 
-type BottomTab = 'lesson' | 'code' | 'instruments';
+type BottomTab = 'lesson' | 'code' | 'instruments' | 'communication';
 
 export function App() {
   const [bottomTab, setBottomTab] = useState<BottomTab>('lesson');
@@ -32,6 +33,7 @@ export function App() {
                 <button style={{ ...styles.tab, ...(bottomTab === 'lesson' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('lesson'); setBottomOpen(true); }}>▣ Learn</button>
                 <button style={{ ...styles.tab, ...(bottomTab === 'code' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('code'); setBottomOpen(true); }}>⌘ Code</button>
                 <button style={{ ...styles.tab, ...(bottomTab === 'instruments' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('instruments'); setBottomOpen(true); }}>◉ Instruments</button>
+                <button style={{ ...styles.tab, ...(bottomTab === 'communication' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('communication'); setBottomOpen(true); }}>⇄ Communication</button>
                 <div style={{ flex: 1 }} />
                 <button style={styles.dockButton} onClick={() => setBottomOpen(v => !v)}>{bottomOpen ? '⌄' : '⌃'}</button>
               </div>
@@ -39,6 +41,7 @@ export function App() {
                 {bottomTab === 'lesson' && <LessonPanel />}
                 {bottomTab === 'code' && <CodeEditor />}
                 {bottomTab === 'instruments' && <InstrumentPanel />}
+                {bottomTab === 'communication' && <CommunicationPanel />}
               </div>}
             </div>
           </div>
@@ -56,8 +59,8 @@ const styles: Record<string, React.CSSProperties> = {
   canvasWrapper: { flex: 1, minHeight: 180, position: 'relative', overflow: 'hidden' },
   canvasHud: { position: 'absolute', left: 10, bottom: 10, display: 'flex', gap: 6, flexWrap: 'wrap', pointerEvents: 'none', opacity: .75 },
   bottomDock: { flexShrink: 0, display: 'flex', flexDirection: 'column', borderTop: '1px solid #30363d', background: '#161b22', transition: 'height 120ms ease' },
-  dockTabs: { height: 38, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2, padding: '0 8px', borderBottom: '1px solid #21262d' },
-  tab: { height: 30, padding: '0 12px', border: 0, background: 'transparent', color: '#8b949e', cursor: 'pointer', fontSize: 12 },
+  dockTabs: { height: 38, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2, padding: '0 8px', borderBottom: '1px solid #21262d', overflowX: 'auto' },
+  tab: { height: 30, padding: '0 12px', border: 0, background: 'transparent', color: '#8b949e', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' },
   activeTab: { background: '#21262d', color: '#e6edf3', borderBottom: '2px solid #58a6ff' },
   dockButton: { border: 0, background: 'transparent', color: '#8b949e', cursor: 'pointer', fontSize: 16 },
 };
