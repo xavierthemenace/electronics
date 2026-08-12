@@ -11,6 +11,7 @@ describe('Arduino teaching runtime', () => {
     expect(result.errors).toEqual([]);
     expect(result.state.digital[13]).toBe(0);
     expect(result.state.serial).toContain('ON');
+    expect(result.state.serialEvents[0]).toMatchObject({ timeMs: 0, text: 'ON', newline: true });
     expect(result.state.elapsedMs).toBeGreaterThanOrEqual(100);
     expect(result.state.transitions.length).toBeGreaterThanOrEqual(2);
     expect(result.state.transitions[0]).toMatchObject({ pin: 13, timeMs: 0, value: 1 });
