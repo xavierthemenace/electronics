@@ -9,14 +9,18 @@ import { LessonPanel } from './LessonPanel.js';
 import { CommunicationPanel } from './CommunicationPanel.js';
 import { BreadboardPanel } from './BreadboardPanel.js';
 import { PeripheralPanel } from './PeripheralPanel.js';
+import { DevicePanel } from './DevicePanel.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 
-type BottomTab = 'lesson' | 'code' | 'instruments' | 'communication' | 'breadboard' | 'peripherals';
+type BottomTab = 'lesson' | 'code' | 'instruments' | 'communication' | 'breadboard' | 'peripherals' | 'devices';
 
 export function App() {
   const [bottomTab, setBottomTab] = useState<BottomTab>('lesson');
   const [bottomOpen, setBottomOpen] = useState(true);
-
+  const tabs: Array<[BottomTab, string]> = [
+    ['lesson', '▣ Learn'], ['code', '⌘ Code'], ['instruments', '◉ Instruments'],
+    ['communication', '⇄ Communication'], ['breadboard', '▦ Breadboard'], ['peripherals', '◌ I/O'], ['devices', '⚙ Devices'],
+  ];
   return (
     <ErrorBoundary>
       <div style={styles.app}>
@@ -26,18 +30,11 @@ export function App() {
           <div style={styles.center}>
             <div style={styles.canvasWrapper}>
               <CanvasRenderer />
-              <div style={styles.canvasHud}>
-                <span>Scroll: zoom</span><span>Space + drag: pan</span><span>Drag pin: wire</span><span>Shift: multi-select</span>
-              </div>
+              <div style={styles.canvasHud}><span>Scroll: zoom</span><span>Space + drag: pan</span><span>Drag pin: wire</span><span>Shift: multi-select</span></div>
             </div>
             <div style={{ ...styles.bottomDock, height: bottomOpen ? 320 : 38 }}>
               <div style={styles.dockTabs}>
-                <button style={{ ...styles.tab, ...(bottomTab === 'lesson' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('lesson'); setBottomOpen(true); }}>▣ Learn</button>
-                <button style={{ ...styles.tab, ...(bottomTab === 'code' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('code'); setBottomOpen(true); }}>⌘ Code</button>
-                <button style={{ ...styles.tab, ...(bottomTab === 'instruments' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('instruments'); setBottomOpen(true); }}>◉ Instruments</button>
-                <button style={{ ...styles.tab, ...(bottomTab === 'communication' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('communication'); setBottomOpen(true); }}>⇄ Communication</button>
-                <button style={{ ...styles.tab, ...(bottomTab === 'breadboard' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('breadboard'); setBottomOpen(true); }}>▦ Breadboard</button>
-                <button style={{ ...styles.tab, ...(bottomTab === 'peripherals' ? styles.activeTab : {}) }} onClick={() => { setBottomTab('peripherals'); setBottomOpen(true); }}>◌ I/O</button>
+                {tabs.map(([id, label]) => <button key={id} style={{ ...styles.tab, ...(bottomTab === id ? styles.activeTab : {}) }} onClick={() => { setBottomTab(id); setBottomOpen(true); }}>{label}</button>)}
                 <div style={{ flex: 1 }} />
                 <button style={styles.dockButton} onClick={() => setBottomOpen(v => !v)}>{bottomOpen ? '⌄' : '⌃'}</button>
               </div>
@@ -48,6 +45,7 @@ export function App() {
                 {bottomTab === 'communication' && <CommunicationPanel />}
                 {bottomTab === 'breadboard' && <BreadboardPanel />}
                 {bottomTab === 'peripherals' && <PeripheralPanel />}
+                {bottomTab === 'devices' && <DevicePanel />}
               </div>}
             </div>
           </div>
