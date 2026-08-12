@@ -15,9 +15,14 @@ import { SchematicPanel } from './SchematicPanel.js';
 import { ProjectHub } from './ProjectHub.js';
 import { SettingsPanel } from './SettingsPanel.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
+import { useProjectStore } from '../stores/project.js';
+import { useCircuitStore } from '../stores/circuit.js';
+import { useCodeStore } from '../stores/code.js';
+import { useBreadboardStore } from '../stores/breadboard.js';
 
 type BottomTab = 'lesson' | 'code' | 'instruments' | 'communication' | 'breadboard' | 'peripherals' | 'devices' | 'systems';
 type ViewMode = 'circuit' | 'schematic';
+const RECOVERY_KEY = 'electronics-mastery-recovery';
 
 export function App() {
   const [bottomTab, setBottomTab] = useState<BottomTab>('lesson');
@@ -30,6 +35,38 @@ export function App() {
     const handler = (e: Event) => setShowHud((e as CustomEvent<{ showHud?: boolean }>).detail?.showHud !== false);
     window.addEventListener('electronics-settings', handler);
     return () => window.removeEventListener('electronics-settings', handler);
+  }, []);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); void useProjectStore.getState().saveProject(); }
+      else if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); useCircuitStore.getState().undo(); }
+      else if (mod && ((e.key.toLowerCase() === 'z' && e.shiftKey) || e.key.toLowerCase() === 'y')) { e.preventDefault(); useCircuitStore.getState().redo(); }
+      else if (mod && e.key.toLowerCase() === 'n') { e.preventDefault(); void useProjectStore.getState().newProject(); }
+      else if (e.key === 'F5') { e.preventDefault(); useSimulationRun(); }
+      else if (e.key === 'Home') { useCircuitStore.getState().resetViewport(); }
+    };
+    const useSimulationRun = () => useSimulationStoreShim();
+    const useSimulationStoreShim = () => { const store = (globalThis as typeof globalThis & { __electronicsRunDC?: () => void }).__electronicsRunDC; if (store) store(); else window.dispatchEvent(new Event('electronics-run-dc')); };
+    window.addEventListener('keydown', handler);
+    const runListener = () => { const run = (window as Window & { __electronicsRunDCImpl?: () => void }).__electronicsRunDCImpl; run?.(); };
+    window.addEventListener('electronics-run-dc', runListener);
+    return () => { window.removeEventListener('keydown', handler); window.removeEventListener('electronics-run-dc', runListener); };
+  }, []);
+  useEffect(() => {
+    let timer: number | undefined;
+    const write = () => {
+      try {
+        const project = useProjectStore.getState().getCircuitProject();
+        localStorage.setItem(RECOVERY_KEY, JSON.stringify({ savedAt: Date.now(), project }));
+      } catch { /* recovery is best-effort */ }
+    };
+    const schedule = () => { if (timer) window.clearTimeout(timer); timer = window.setTimeout(write, 800); };
+    const unsubCircuit = useCircuitStore.subscribe(schedule);
+    const unsubCode = useCodeStore.subscribe(schedule);
+    const unsubBreadboard = useBreadboardStore.subscribe(schedule);
+    schedule();
+    return () => { if (timer) window.clearTimeout(timer); unsubCircuit(); unsubCode(); unsubBreadboard(); };
   }, []);
   const tabs: Array<[BottomTab, string]> = [
     ['lesson', '▣ Learn'], ['code', '⌘ Code'], ['instruments', '◉ Instruments'], ['communication', '⇄ Communication'],
